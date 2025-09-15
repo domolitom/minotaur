@@ -48,3 +48,7 @@ func main() {
 	fmt.Println("Starting server :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
+
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
