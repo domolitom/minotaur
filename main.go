@@ -13,6 +13,12 @@ type BinancePriceResponse struct {
 	Price  string `json:"price"`
 }
 
+type DepthResponse struct {
+	LastUpdateId int        `json:"lastUpdateId"`
+	Bids         [][]string `json:"bids"`
+	Asks         [][]string `json:"asks"`
+}
+
 func main() {
 	http.HandleFunc("/price", priceHandler)
 	fmt.Println("Starting server :8080")
@@ -35,6 +41,19 @@ func GetPrice(symbol string) (BinancePriceResponse, error) {
 	var priceResp BinancePriceResponse
 	err = json.NewDecoder(resp.Body).Decode(&priceResp)
 	return priceResp, err
+}
+
+func GetOrderBook(symbol string, limit int) (DepthResponse, error) {
+	url := fmt.Sprintf("https://api.binance.com/api/v3/depth?symbol=%s&limit=%d", symbol, limit)
+	resp, err := http.Get(url)
+	if err != nil {
+		return DepthResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	var depth DepthResponse
+	err = json.NewDecoder(resp.Body).Decode(&depth)
+	return depth, err
 }
 
 // HTTP handler
