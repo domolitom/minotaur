@@ -21,6 +21,7 @@ type DepthResponse struct {
 
 func main() {
 	http.HandleFunc("/price", priceHandler)
+	http.HandleFunc("/orderbook", orderBookHandler)
 	fmt.Println("Starting server :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -70,4 +71,20 @@ func priceHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(priceResp)
+}
+
+func orderBookHandler(w http.ResponseWriter, r *http.Request) {
+	symbol := r.URL.Query().Get("symbol")
+	if symbol == "" {
+		symbol = "BTCUSDT"
+	}
+	limit := 5 // Default limit
+	depthResp, err := GetOrderBook(symbol, limit)
+	if err != nil {
+		http.Error(w, "Failed to fetch order book from Binance", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(depthResp)
 }
