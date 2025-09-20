@@ -3,7 +3,7 @@ package detector
 import (
 	"fmt"
 
-	"github.com/domolitom/minotaur/pkg/binance"
+	"github.com/domolitom/minotaur/pkg/types"
 	"github.com/shopspring/decimal"
 )
 
@@ -19,22 +19,15 @@ func NewDetector(largeQty, largeTradeUsd int64) *Detector {
 	}
 }
 
-func (d *Detector) DetectOrderbook(ob *binance.OrderBook) {
-	ob.DetectJumps(d.LargeQty)
-}
-
-func (d *Detector) DetectTrade(trade binance.TradeEvent) {
-	qty, err1 := decimal.NewFromString(trade.Qty)
-	price, err2 := decimal.NewFromString(trade.Price)
-	if err1 != nil || err2 != nil {
-		return
+func (d *Detector) DetectOrderbook(update types.OrderbookUpdate) {
+	if update.Qty.GreaterThan(d.LargeQty) {
+		fmt.Printf("JUMP: %s %s @ %s\n", update.Side, update.Qty, update.Price)
 	}
-	usdValue := qty.Mul(price)
+}
+func (d *Detector) DetectTrade(event types.TradeEvent) {
+	usdValue := event.Price.Mul(event.Qty)
 	if usdValue.GreaterThan(d.LargeTradeUSD) {
-		direction := "SELL"
-		if !trade.IsBuyerMaker {
-			direction = "BUY"
-		}
-		fmt.Printf("🐋 LARGE TRADE: %s %v @ %v = $%v\n", direction, qty, price, usdValue)
+		fmt.Printf("🐋 LARGE TRADE: %s %v @ %v on %s = $%v\n",
+			event.Side, event.Qty, event.Price, event.Exchange, usdValue)
 	}
 }
