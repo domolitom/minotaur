@@ -20,6 +20,12 @@ func NewOrderBook() *OrderBook {
 	}
 }
 
+func (ob *OrderBook) handleDepthResponse(res DepthResult) {
+	for _, ask := range res.Asks {
+		fmt.Println(ask)
+	}
+}
+
 func (ob *OrderBook) Update(side string, price string, qty string) {
 	ob.Lock()
 	defer ob.Unlock()

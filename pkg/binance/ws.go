@@ -17,48 +17,21 @@ const (
 )
 
 func RunOrderBookWS(det *detector.Detector) {
-	c, _, err := websocket.DefaultDialer.Dial(orderBookURL, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(orderBookURL, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer c.Close()
+
+	var (
+		ob  = NewOrderBook()
+		res DepthResponse
+	)
+
 	for {
-		_, msg, err := c.ReadMessage()
-		if err != nil {
-			log.Println("Depth error:", err)
-			return
+		if err := conn.ReadJSON(&res); err != nil {
+			log.Fatal("Orderbook read:", err)
 		}
-		var event DepthEvent
-		if err := json.Unmarshal(msg, &event); err != nil {
-			continue
-		}
-		// For each update, convert bid/ask to generic detector.OrderbookUpdate and process
-		for _, b := range event.Bids {
-			price, err1 := decimal.NewFromString(b[0])
-			qty, err2 := decimal.NewFromString(b[1])
-			if err1 != nil || err2 != nil {
-				continue
-			}
-			obupdate := types.OrderbookUpdate{
-				Side:  "bid",
-				Price: price,
-				Qty:   qty,
-			}
-			det.DetectOrderbook(obupdate)
-		}
-		for _, a := range event.Asks {
-			price, err1 := decimal.NewFromString(a[0])
-			qty, err2 := decimal.NewFromString(a[1])
-			if err1 != nil || err2 != nil {
-				continue
-			}
-			obupdate := types.OrderbookUpdate{
-				Side:  "ask",
-				Price: price,
-				Qty:   qty,
-			}
-			det.DetectOrderbook(obupdate)
-		}
+		ob.handleDepthResponse(res.Data)
 	}
 }
 

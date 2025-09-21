@@ -1,8 +1,13 @@
 package binance
 
-type DepthEvent struct {
+type DepthResult struct {
 	Bids [][]string `json:"b"`
 	Asks [][]string `json:"a"`
+}
+
+type DepthResponse struct {
+	Stream string      `json:"stream"`
+	Data   DepthResult `json:"data"`
 }
 
 type TradeEvent struct {
