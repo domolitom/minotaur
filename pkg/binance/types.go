@@ -16,3 +16,8 @@ type TradeEvent struct {
 	IsBuyerMaker bool   `json:"m"`
 	TradeTime    int64  `json:"T"`
 }
+
+type TradeResponse struct {
+	Stream string     `json:"stream"`
+	Data   TradeEvent `json:"data"`
+}
