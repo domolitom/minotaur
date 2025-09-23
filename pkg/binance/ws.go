@@ -1,11 +1,10 @@
 package binance
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/domolitom/minotaur/pkg/detector"
-	"github.com/domolitom/minotaur/pkg/types"
 	"github.com/gorilla/websocket"
 	"github.com/shopspring/decimal"
 )
@@ -36,38 +35,27 @@ func RunOrderBookWS(det *detector.Detector) {
 }
 
 func RunTradeWS(det *detector.Detector) {
-	c, _, err := websocket.DefaultDialer.Dial(tradesURL, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(tradesURL, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer c.Close()
+
+	var res TradeResponse
+
 	for {
-		_, msg, err := c.ReadMessage()
+		if err := conn.ReadJSON(&res); err != nil {
+			log.Fatal("Trade read:", err)
+		}
+		price, err := decimal.NewFromString(res.Data.Price)
 		if err != nil {
-			log.Println("Trade error:", err)
-			return
-		}
-		var trade TradeEvent
-		if err := json.Unmarshal(msg, &trade); err != nil {
+			log.Println("Trade price parse:", err)
 			continue
 		}
-		// Convert to generic detector.TradeEvent
-		price, err1 := decimal.NewFromString(trade.Price)
-		qty, err2 := decimal.NewFromString(trade.Qty)
-		if err1 != nil || err2 != nil {
+		qty, err := decimal.NewFromString(res.Data.Qty)
+		if err != nil {
+			log.Println("Trade qty parse:", err)
 			continue
 		}
-		side := "sell"
-		if !trade.IsBuyerMaker {
-			side = "buy"
-		}
-		genericTrade := types.TradeEvent{
-			Price:     price,
-			Qty:       qty,
-			Side:      side,
-			Exchange:  "binance",
-			Timestamp: trade.TradeTime,
-		}
-		det.DetectTrade(genericTrade)
+		fmt.Println("Trade:", price, qty, res.Data.IsBuyerMaker, res.Data.TradeTime)
 	}
 }
